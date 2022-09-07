@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bwastartup/auth"
 	"bwastartup/helper"
 	"bwastartup/user"
 	"fmt"
@@ -13,15 +14,16 @@ import (
 
 type userHandler struct {
 	userService user.Service
+	authService auth.Service
 }
 
-func NewUserHandler(userService user.Service) *userHandler {
-	return &userHandler{userService}
+func NewUserHandler(userService user.Service, authService auth.Service) *userHandler {
+	return &userHandler{userService, authService}
 }
 
 func (h *userHandler) RegisterUser(c *gin.Context) {
 	var input user.RegisterUserInput
-
+	
 	// Get input user
 	err := c.ShouldBindJSON(&input)
 	if err != nil {
@@ -41,9 +43,16 @@ func (h *userHandler) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	token := "token"
-	userFormat := user.FormatUser(newUser, token)
-	response := helper.APIResponse("your account has been craeted", http.StatusOK, "success", userFormat)
+	// Generate token
+	token, err := h.authService.GenerateToken(newUser.ID)
+	if err != nil {
+		response := helper.APIResponse("failed to create account", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data := user.FormatUser(newUser, token)
+	response := helper.APIResponse("your account has been craeted", http.StatusOK, "success", data)
 
 	c.JSON(http.StatusOK, response)
 }
@@ -72,9 +81,16 @@ func (h *userHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token := "token"
-	formatter := user.FormatUser(loggedinUser, token)
-	response := helper.APIResponse("login success", http.StatusOK, "success", formatter)
+	// Generate token
+	token, err := h.authService.GenerateToken(loggedinUser.ID)
+	if err != nil {
+		response := helper.APIResponse("login failed", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data := user.FormatUser(loggedinUser, token)
+	response := helper.APIResponse("login success", http.StatusOK, "success", data)
 
 	c.JSON(http.StatusOK, response)
 }
@@ -93,6 +109,7 @@ func (h *userHandler) CheckEmailAvailability(c *gin.Context) {
 		return
 	}
 
+	// Check email availability
 	isAvailable, err := h.userService.CheckEmailAvailability(input)
 	if err != nil {
 		errorMessages := gin.H{"errors": "server error"}
@@ -117,6 +134,7 @@ func (h *userHandler) CheckEmailAvailability(c *gin.Context) {
 }
 
 func (h *userHandler) UploadAvatar(c *gin.Context) {
+	// Get file input
 	file, err := c.FormFile("avatar")
 	if err != nil {
 		data := gin.H{
@@ -132,6 +150,7 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
 	fileFormat := splitedFileName[len(splitedFileName) - 1]
 	path := fmt.Sprint("images/", userID, time.Now().Format("010206150405"), ".", fileFormat)
 
+	// Save image to directory
 	err = c.SaveUploadedFile(file, path)
 	if err != nil {
 		data := gin.H{
@@ -142,6 +161,7 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
+	// Save image to database
 	_, err = h.userService.SaveAvatar(userID, path)
 	if err != nil {
 		data := gin.H{
