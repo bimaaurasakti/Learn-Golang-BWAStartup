@@ -3,11 +3,15 @@ package main
 import (
 	"bwastartup/auth"
 	"bwastartup/handler"
+	"bwastartup/helper"
 	"bwastartup/user"
 	"fmt"
 	"log"
+	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -28,23 +32,6 @@ func main() {
 	userService := user.NewService(userRepository)
 	userHandler := handler.NewUserHandler(userService, authService)
 
-	token, err := authService.ValidateToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1fQ.GWvL3pq455uC2QN-4Ll_vyEi_KGGAE9HNnq45aqKUUg")
-	if err != nil {
-		fmt.Println("ERROR")
-		fmt.Println("ERROR")
-		fmt.Println("ERROR")
-	}
-
-	if token.Valid  {
-		fmt.Println(token)
-		fmt.Println(token)
-		fmt.Println(token)
-	}else {
-		fmt.Println("INVALID")
-		fmt.Println("INVALID")
-		fmt.Println("INVALID")
-	}
-
 
 	// Router
 	route := gin.Default()
@@ -53,7 +40,51 @@ func main() {
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.Login)
 	api.POST("/check_email", userHandler.CheckEmailAvailability)
-	api.POST("/avatars", userHandler.UploadAvatar)
+	api.POST("/avatars", authMiddleware(authService, userService), userHandler.UploadAvatar)
 
 	route.Run()
+}
+
+
+func authMiddleware(authService auth.Service, userService user.Service) gin.HandlerFunc {
+	return func (c *gin.Context) {
+		bearerToken := c.GetHeader("Authorization")
+		if !strings.Contains(bearerToken, "Bearer") {
+			response := helper.APIResponse("unauthorized token", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+		
+		stringToken := ""
+		splitedBearerToken := strings.Split(bearerToken, " ")
+		if len(splitedBearerToken) == 2 {
+			stringToken = splitedBearerToken[1]
+		}
+
+
+		token, err := authService.ValidateToken(stringToken)
+		if err != nil {
+			response := helper.APIResponse("unauthorized token", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		claim, ok := token.Claims.(jwt.MapClaims)
+		if !ok || !token.Valid {
+			response := helper.APIResponse("unauthorized token", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		userID := int(claim["user_id"].(float64))
+		
+		user, err := userService.GetUserByID(userID)
+		if err != nil {
+			response := helper.APIResponse("unauthorized token", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		c.Set("currentUser", user)
+	}
 }

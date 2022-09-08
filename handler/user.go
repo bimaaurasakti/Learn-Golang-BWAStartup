@@ -145,10 +145,14 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	userID := 5
+	// Get user from Middleware
+	currentUser := c.MustGet("currentUser").(user.User)
+	userID := currentUser.ID
+
+	// Create file name
 	splitedFileName := strings.Split(file.Filename, ".")
 	fileFormat := splitedFileName[len(splitedFileName) - 1]
-	path := fmt.Sprint("images/", userID, time.Now().Format("010206150405"), ".", fileFormat)
+	path := fmt.Sprint("images/", userID, "_", time.Now().Format("010206150405"), ".", fileFormat)
 
 	// Save image to directory
 	err = c.SaveUploadedFile(file, path)
@@ -156,7 +160,7 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
 		data := gin.H{
 			"is_uploaded": false,
 		}
-		response := helper.APIResponse("save to image", http.StatusBadRequest, "error", data)
+		response := helper.APIResponse("failed to upload avatar image", http.StatusBadRequest, "error", data)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
