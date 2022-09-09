@@ -2,6 +2,7 @@ package main
 
 import (
 	"bwastartup/auth"
+	"bwastartup/campaign"
 	"bwastartup/handler"
 	"bwastartup/helper"
 	"bwastartup/user"
@@ -31,6 +32,14 @@ func main() {
 	userRepository := user.NewRepository(db)
 	userService := user.NewService(userRepository)
 	userHandler := handler.NewUserHandler(userService, authService)
+	campaignRepository := campaign.NewRepository(db)
+
+	campaigns, err := campaignRepository.GetAll()
+	fmt.Println(len(campaigns))
+	for index, campaign := range campaigns {
+		fmt.Println(index, " - ", campaign.Name)
+		fmt.Println(index, " - ", campaign.CampaignImages)
+	}
 
 
 	// Router

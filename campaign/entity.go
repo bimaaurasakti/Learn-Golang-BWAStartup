@@ -15,19 +15,14 @@ type Campaign struct {
 	Slug         	 string
 	CreatedAt      	 time.Time
 	UpdatedAt 	   	 time.Time
+	CampaignImages   []CampaignImage
 }
 
 type CampaignImage struct {
 	ID             	 int
-	UserID         	 int
-	Name           	 string
-	ShortDescription string
-	Description      string
-	GoalAmount   	 string
-	CurrentAmount 	 string
-	Perks            string
-	BackerCount      string
-	Slug         	 string
+	CampaignID       int
+	FileName      	 string
+	IsPrimary		 string
 	CreatedAt      	 time.Time
 	UpdatedAt 	   	 time.Time
 }
