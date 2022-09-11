@@ -1,9 +1,15 @@
 package campaign
 
+import (
+	"fmt"
+
+	"github.com/gosimple/slug"
+)
 
 type Service interface {
 	GetCampaigns(userID int) ([]Campaign, error)
 	GetCampaign(input CampaignDetailInput) (Campaign, error)
+	CreateCampaign(input CreateCampaignInput) (Campaign, error)
 }
 
 type service struct {
@@ -19,9 +25,9 @@ func (s *service) GetCampaigns(userID int) ([]Campaign, error) {
 	var err error
 
 	if userID == 0 {
-		campaigns, err = s.repository.GetAll()
+		campaigns, err = s.repository.FindAll()
 	} else {
-		campaigns, err = s.repository.GetByUserID(userID)
+		campaigns, err = s.repository.FindByUserID(userID)
 	}
 
 	if err != nil {
@@ -32,10 +38,32 @@ func (s *service) GetCampaigns(userID int) ([]Campaign, error) {
 }
 
 func (s *service) GetCampaign(input CampaignDetailInput) (Campaign, error) {
-	campaigns, err := s.repository.GetByID(input.ID)
+	campaigns, err := s.repository.FindByID(input.ID)
 	if err != nil {
 		return campaigns, err
 	}
 
 	return campaigns, nil
+}
+
+func (s *service) CreateCampaign(input CreateCampaignInput) (Campaign, error) {
+	campaign := Campaign{}
+	campaign.UserID = input.User.ID
+	campaign.Name = input.Name
+	campaign.ShortDescription = input.ShortDescription
+	campaign.Description = input.Description
+	campaign.GoalAmount = input.GoalAmount
+	campaign.Perks = input.Perks
+	campaign.CurrentAmount = 0
+	campaign.BackerCount = 0
+
+	campaignSlug := fmt.Sprintf("%s %d", input.Name, input.User.ID)
+	campaign.Slug = slug.Make(campaignSlug)
+
+	newCampaign, err := s.repository.Save(campaign)
+	if err != nil {
+		return newCampaign, err
+	}
+
+	return newCampaign, nil
 }

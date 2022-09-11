@@ -3,7 +3,7 @@ package handler
 import (
 	"bwastartup/campaign"
 	"bwastartup/helper"
-	"fmt"
+	"bwastartup/user"
 	"net/http"
 	"strconv"
 
@@ -43,8 +43,6 @@ func (h *campaignHandler) GetCampaign(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(input)
-
 	campaignData, err := h.campaignService.GetCampaign(input)
 	if err != nil {
 		response := helper.APIResponse("failed to get detail campaign", http.StatusBadRequest, "error", nil)
@@ -54,5 +52,30 @@ func (h *campaignHandler) GetCampaign(c *gin.Context) {
 
 	data := campaign.FormatCampaignDetail(campaignData)
 	response := helper.APIResponse("get campaign detail success", http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *campaignHandler) CreateCampaign(c *gin.Context) {
+	var input campaign.CreateCampaignInput
+
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		response := helper.APIResponse("failed to create campaign", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	currentUser := c.MustGet("currentUser").(user.User)
+	input.User = currentUser
+
+	newCampaign, err := h.campaignService.CreateCampaign(input)
+	if err != nil {
+		response := helper.APIResponse("failed to create campaign", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data := campaign.FormatCampaign(newCampaign)
+	response := helper.APIResponse("create campaign success", http.StatusOK, "success", data)
 	c.JSON(http.StatusOK, response)
 }

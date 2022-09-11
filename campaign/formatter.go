@@ -88,8 +88,8 @@ func FormatCampaignDetail(campaign Campaign) CampaignDetailFormatter {
 	}
 
 	var perks []string
-	for _, perk := range strings.Split(campaign.Perks, ", ") {
-		perks = append(perks, perk)
+	for _, perk := range strings.Split(campaign.Perks, ",") {
+		perks = append(perks, strings.Trim(perk, " "))
 	}
 	campaignDetailFormatter.Perks = perks
 	campaignDetailFormatter.User = FormatCampaignUserFormatter(campaign.User)
