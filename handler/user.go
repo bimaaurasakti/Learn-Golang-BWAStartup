@@ -152,10 +152,10 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
 	// Create file name
 	splitedFileName := strings.Split(file.Filename, ".")
 	fileFormat := splitedFileName[len(splitedFileName) - 1]
-	path := fmt.Sprint("images/", userID, "_", time.Now().Format("010206150405"), ".", fileFormat)
+	path := fmt.Sprint("images/user/", userID, "_", time.Now().Format("010206150405"), ".", fileFormat)
 
-	// Save image to directory
-	err = c.SaveUploadedFile(file, path)
+	// Save image to database
+	_, err = h.userService.SaveAvatar(userID, path)
 	if err != nil {
 		data := gin.H{
 			"is_uploaded": false,
@@ -165,8 +165,8 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// Save image to database
-	_, err = h.userService.SaveAvatar(userID, path)
+	// Save image to directory
+	err = c.SaveUploadedFile(file, path)
 	if err != nil {
 		data := gin.H{
 			"is_uploaded": false,

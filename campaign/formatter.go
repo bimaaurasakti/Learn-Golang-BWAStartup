@@ -122,3 +122,4 @@ func FormatCampaignImagesFormatter(campaignImages []CampaignImage) []CampaignIma
 
 	return campaignImagesFormatterArray
 }
+
