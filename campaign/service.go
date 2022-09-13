@@ -105,7 +105,7 @@ func (s *service) UploadCampaignImage(input UploadCampaignImageInput, fileLocati
 		return CampaignImage{}, errors.New("not the owner of the campaign")
 	}
 
-	if input.IsPrimary == "1" {
+	if input.IsPrimary {
 		_, err = s.repository.MarkAllImageAsNonPrimary(input.CampaignID)
 		if err != nil {
 			return CampaignImage{}, err
