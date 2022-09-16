@@ -5,7 +5,8 @@ import (
 )
 
 type Repository interface {
-	FindTransactionByCampaignID(campaignID int) ([]Transaction, error)
+	FindByCampaignID(campaignID int) ([]Transaction, error)
+	FindByUserID(userID int) ([]Transaction, error)
 }
 
 type repository struct {
@@ -16,7 +17,7 @@ func NewRepository(db *gorm.DB) *repository {
 	return &repository{db}
 }
 
-func (r *repository) FindTransactionByCampaignID(campaignID int) ([]Transaction, error) {
+func (r *repository) FindByCampaignID(campaignID int) ([]Transaction, error) {
 	var transaction []Transaction
 
 	err := r.db.Preload("User").Where("campaign_id = ?", campaignID).Order("id desc").Find(&transaction).Error
@@ -27,3 +28,13 @@ func (r *repository) FindTransactionByCampaignID(campaignID int) ([]Transaction,
 	return transaction, nil
 }
 
+func (r *repository) FindByUserID(userID int) ([]Transaction, error) {
+	var transaction []Transaction
+
+	err := r.db.Preload("Campaign.CampaignImages").Where("user_id = ?", userID).Order("id desc").Find(&transaction).Error
+	if err != nil {
+		return transaction, err
+	}
+
+	return transaction, nil
+}
